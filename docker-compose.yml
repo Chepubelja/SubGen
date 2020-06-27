@@ -1,0 +1,6 @@
+version: '2.1'
+services:
+    flask:
+        image: ''
+    redis:
+        image: 'redis:3.2.7'
