@@ -1,3 +1,7 @@
+"""
+Module for testing purposes.
+"""
+
 from audio_extractor import AudioExtractor
 from recognizer import SpeechRecognizer
 from sub_generator import SubtitlesGenerator
