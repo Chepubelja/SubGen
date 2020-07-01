@@ -16,7 +16,7 @@ class AudioExtractor():
     def load_video(self):
         self.video = VideoFileClip(self.filename)
 
-    def extract_mp3(self):
+    def extract_audio(self):
         self.audio = self.video.audio
 
     def save_audio(self, audio_path):
