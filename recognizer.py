@@ -36,7 +36,7 @@ class SpeechRecognizer():
             # Using Google speech recognition
             logging.info(f"Converting audio into text ...")
             text = self.recognizer.recognize_google(audio, language="en-US")
-            print(text)
+            return text
 
 
 if __name__ == '__main__':
