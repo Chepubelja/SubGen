@@ -26,7 +26,7 @@ class SubtitlesGenerator():
 
         # Creating base directory
         basedir = os.path.dirname(self.srt_path)
-        if not os.path.exists(basedir):
+        if not os.path.exists(basedir) and  basedir:
             os.makedirs(basedir)
 
         # Creating empty file
@@ -42,8 +42,8 @@ class SubtitlesGenerator():
         self.create_subs_path()
 
         subs = open_srt(self.srt_path)
-        texts = sub_gen.prepare_text(text.split(" "))
-        timestamps = sub_gen.prepare_timestamps(texts)
+        texts = self.prepare_text(text.split(" "))
+        timestamps = self.prepare_timestamps(texts)
 
         for i, (sentence, (start_timestamp, end_timestamp)) in enumerate(zip(texts, timestamps)):
             start_timestamp_list = [int(ts) for ts in start_timestamp.split(':')]
