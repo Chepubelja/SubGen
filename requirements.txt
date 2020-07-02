@@ -2,3 +2,5 @@ Flask==1.1.2
 redis==3.5.3
 Flask-Session==0.3.2
 celery==4.4.6
+SpeechRecognition==3.8.1
+pysrt==1.1.2

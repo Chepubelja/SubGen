@@ -1,9 +1,13 @@
-from flask import Flask, render_template, request, flash, redirect, session, send_from_directory, jsonify, url_for, send_file
+from flask import Flask, render_template, request, flash, redirect, session, jsonify, url_for, send_file
 import uuid
 import os
 from celery import Celery
 import time
 import shutil
+
+from audio_extractor import AudioExtractor
+from recognizer import SpeechRecognizer
+from sub_generator import SubtitlesGenerator
 
 UPLOAD_FOLDER = './files'
 RESULT_FOLDER = './files'
@@ -28,11 +32,24 @@ def allowed_file(filename):
 
 
 @celery.task(bind=True)
-def my_task(self, inp_file, out_file):
-    time.sleep(10)
-    shutil.copyfile(os.path.join(app.config['UPLOAD_FOLDER'], inp_file),
-                    os.path.join(app.config['RESULT_FOLDER'], out_file))
-    return {'result': out_file}
+def my_task(self, inp_file):
+    path_to_video = os.path.join(app.config['UPLOAD_FOLDER'], inp_file)
+    video_name = inp_file.split('.')[0]
+    path_to_audio = os.path.join(app.config['UPLOAD_FOLDER'], f"{video_name}.wav")
+    path_to_subs = os.path.join(app.config['UPLOAD_FOLDER'], f"{video_name}.srt")
+
+    audio_ext = AudioExtractor(path_to_video)
+    audio_ext.load_video()
+    audio_ext.extract_audio()
+    audio_ext.save_audio(path_to_audio)
+
+    speech_recognizer = SpeechRecognizer()
+    recognized_text = speech_recognizer.recognize(path_to_audio)
+
+    sub_gen = SubtitlesGenerator(path_to_subs)
+    sub_gen.generate_srt(recognized_text)
+
+    return {'result': path_to_subs}
 
 @app.route('/status/<task_id>')
 def taskstatus(task_id):
@@ -60,10 +77,11 @@ def index():
         if vid_inp_file and allowed_file(vid_inp_file.filename):
             file_ext = vid_inp_file.filename.split('.')[-1]
             inp_file_name = "{}.{}".format(str(session['uid']), file_ext)
-            out_file_name = "{}-result.{}".format(str(session['uid']), file_ext)
             vid_inp_file.save(os.path.join(app.config['UPLOAD_FOLDER'], inp_file_name))
 
-            task = my_task.apply_async((inp_file_name, out_file_name))
+            print("inp_file_name ", inp_file_name)
+
+            task = my_task.apply_async((inp_file_name,))
             return render_template('index.html', Location=url_for('taskstatus', task_id=task.id))
         else:
             flash('some error occurred')
@@ -74,7 +92,7 @@ def index():
 @app.route('/return-files/<path:filename>')
 def return_files(filename):
     try:
-        return send_file(os.path.join(app.config['RESULT_FOLDER'], filename), as_attachment=True)
+        return send_file(filename, as_attachment=True)
     except Exception as e:
         return str(e)
 
