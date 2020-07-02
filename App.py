@@ -38,16 +38,28 @@ def my_task(self, inp_file):
     path_to_audio = os.path.join(app.config['UPLOAD_FOLDER'], f"{video_name}.wav")
     path_to_subs = os.path.join(app.config['UPLOAD_FOLDER'], f"{video_name}.srt")
 
+    self.update_state(state='PROGRESS',
+                      meta={'status': "Extracting audio ..."})
+
     audio_ext = AudioExtractor(path_to_video)
     audio_ext.load_video()
     audio_ext.extract_audio()
     audio_ext.save_audio(path_to_audio)
 
+    self.update_state(state='PROGRESS',
+                      meta={'status': "Converting audio into text ..."})
+
     speech_recognizer = SpeechRecognizer()
     recognized_text = speech_recognizer.recognize(path_to_audio)
 
+    self.update_state(state='PROGRESS',
+                      meta={'status': "Generated subtitles ..."})
+
     sub_gen = SubtitlesGenerator(path_to_subs)
     sub_gen.generate_srt(recognized_text)
+
+    self.update_state(state='PROGRESS',
+                      meta={'status': "Done! "})
 
     return {'result': path_to_subs}
 
@@ -57,8 +69,14 @@ def taskstatus(task_id):
     response = {
         'state': task.state,
     }
+
     if task.state not in ('FAILURE', 'PENDING') and 'result' in task.info:
         response['result'] = task.info['result']
+
+    if task.state != 'FAILURE' and 'status' in task.info:
+        response['status'] = task.info['status']
+    else:
+        response['status'] = task.state
 
     return jsonify(response)
 
@@ -78,9 +96,6 @@ def index():
             file_ext = vid_inp_file.filename.split('.')[-1]
             inp_file_name = "{}.{}".format(str(session['uid']), file_ext)
             vid_inp_file.save(os.path.join(app.config['UPLOAD_FOLDER'], inp_file_name))
-
-            print("inp_file_name ", inp_file_name)
-
             task = my_task.apply_async((inp_file_name,))
             return render_template('index.html', Location=url_for('taskstatus', task_id=task.id))
         else:

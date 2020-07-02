@@ -26,7 +26,7 @@
                 $('#sub').prop('disabled', true);
                 function check_job_status(status_url) {
                     $.getJSON(status_url, function(data) {
-                        $("#progress").text('Result: ' + data['state']);
+                        $("#progress").text('Status: ' + data['status']);
                         if (data['state'] != 'PENDING' && data['state'] != 'PROGRESS') {
                             if ('result' in data) {
                                 //<a href="/return-files/" download>download result</a>
