@@ -93,7 +93,11 @@ def index():
         vid_inp_file = request.files['vid_inp_file']
 
         if vid_inp_file and allowed_file(vid_inp_file.filename):
+            # original file name (is used to return result file with similar name)
+            session['original_filename'] = vid_inp_file.filename.split('.')[0]
+
             file_ext = vid_inp_file.filename.split('.')[-1]
+            # filename on server
             inp_file_name = "{}.{}".format(str(session['uid']), file_ext)
             vid_inp_file.save(os.path.join(app.config['UPLOAD_FOLDER'], inp_file_name))
             task = my_task.apply_async((inp_file_name,))
@@ -106,10 +110,10 @@ def index():
 
 @app.route('/return-files/<path:filename>')
 def return_files(filename):
-    try:
-        return send_file(filename, as_attachment=True)
-    except Exception as e:
-        return str(e)
+    if os.path.exists(filename):
+        return_filename = "{}_result.{}".format(session['original_filename'], filename.split('.')[-1])
+        return send_file(filename, attachment_filename = return_filename, as_attachment=True)
+    return redirect(url_for("index"))
 
 if __name__ == "__main__":
     app.debug = True
