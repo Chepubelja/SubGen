@@ -134,6 +134,7 @@ def index():
             else:
                 if not request.files['vid_inp_file'] or not allowed_file(request.files['vid_inp_file']):
                     return redirect(request.url)
+                vid_inp_file = request.files['vid_inp_file']
                 session['original_filename'] = vid_inp_file.filename.split('.')[0]
                 file_ext = vid_inp_file.filename.split('.')[-1]
                 inp_file_name = "{}.{}".format(str(session['uid']), file_ext)
