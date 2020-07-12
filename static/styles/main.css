@@ -40,9 +40,9 @@ div.full {
 .btn-container {
     background: rgba(255, 255, 255, 0.95);
     border-radius: 100%;
-    padding-bottom: 10%;
-    padding-top: 10%;
-    margin-top: 10%;
+    padding-bottom: 7%;
+    padding-top: 7%;
+    margin-top: 5%;
     border: 10px #4c4caf solid;
 }
 
@@ -61,6 +61,17 @@ div.full {
     display: inline-block;
     line-height: 20px;
     vertical-align: bottom;
+}
+#namefile_3 {
+    font-size: 25px;
+    color: black;
+    margin-top: 25px;
+}
+
+#namefile_4 {
+    font-size: 25px;
+    color: black;
+    margin-top: 25px;
 }
 
 .local {
@@ -83,7 +94,20 @@ input#sub {
     text-decoration: none;
     display: inline-block;
     font-size: 22px;
-    margin-top: 5vh;
+    margin-top: 2vh;
+    border-radius: 6px;
+}
+
+input#download_res {
+    background-color: #4c4caf;
+    border: none;
+    color: white;
+    padding: 10px 26px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 22px;
+    margin-top: 2vh;
     border-radius: 6px;
 }
 
@@ -272,4 +296,8 @@ div.main-block {
     font-weight: bold;
     border-radius: 15px;
     padding: 10px 20px;
+}
+
+label.radio-inline {
+    padding: 7px;
 }
