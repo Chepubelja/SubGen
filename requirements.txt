@@ -4,3 +4,5 @@ Flask-Session==0.3.2
 celery==4.4.6
 SpeechRecognition==3.8.1
 pysrt==1.1.2
+coloredlogs==14.0
+moviepy==1.0.3
