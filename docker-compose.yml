@@ -1,6 +1,42 @@
-version: '2.1'
+version: '3'
+
 services:
-    flask:
-        image: ''
-    redis:
-        image: 'redis:3.2.7'
+  web:
+    build: .
+    ports:
+      - "5000:5000"
+    environment:
+      FLASK_ENV: development
+    links:
+       - redis
+       - celery
+    depends_on:
+       - redis
+       - celery
+    volumes:
+      - app-volume:/SubGen/files
+    command:
+      flask run --host 0.0.0.0
+
+  redis:
+    image: "redis:alpine"
+    ports:
+      - '6379:6379'
+    command:
+      redis-server
+    volumes:
+      - app-volume:/SubGen/files
+
+  celery:
+    build: .
+    links:
+      - redis
+    depends_on:
+      - redis
+    volumes:
+      - app-volume:/SubGen/files
+    command:
+      celery -A App.celery worker
+
+volumes:
+    app-volume:
