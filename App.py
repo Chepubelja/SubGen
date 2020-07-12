@@ -30,6 +30,11 @@ def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1] in ALLOWED_EXTENSIONS
 
+@celery.task(bind=True)
+def delete_file(self, filename):
+    if os.path.exists(filename):
+        os.remove(filename)
+
 
 @celery.task(bind=True)
 def my_task(self, inp_file):
@@ -58,9 +63,15 @@ def my_task(self, inp_file):
     sub_gen = SubtitlesGenerator(path_to_subs)
     sub_gen.generate_srt(recognized_text)
 
+    # delete intermidiate files
+    os.remove(path_to_video)
+    os.remove(path_to_audio)
+
     self.update_state(state='PROGRESS',
                       meta={'status': "Done! "})
 
+    # delete result file from server 10 minutes after returning it to user
+    delete_file.apply_async(args=[path_to_subs,], countdown=600)
     return {'result': path_to_subs}
 
 @app.route('/status/<task_id>')
