@@ -23,4 +23,5 @@ if __name__ == '__main__':
 
     sub_gen = SubtitlesGenerator(path_to_subs)
     sub_gen.generate_srt(recognized_text)
+    sub_gen.embed_subs_in_video("christian_bale.mp4", "test.mp4")
 

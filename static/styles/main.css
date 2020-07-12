@@ -1,0 +1,275 @@
+html, body {
+    height: 100%;
+}
+
+/*just bg and body style*/
+.container {
+    /*background-color: #1E2832;*/
+    /*background-image: url("https://files.stocky.ai/uploads/2019/03/image-Colorful-Music-Background-Means-Harmony-And-Song-stocky-ai-14020170.jpg");*/
+    /*background-image: url("https://www.googleplaymusicdesktopplayer.com/img/par1.jpg");*/
+    background-image: url("../images/background_new.jpg");
+    /*background-position: top; !* Center the image *!*/
+    background-size: cover; /* Resize the background image to cover the entire container */
+    padding-bottom: 20px;
+    /*margin-top:10px;*/
+    border-radius: 5px;
+    padding-top: 5%;
+}
+
+/*@media (min-width: 1200px)*/
+.container, .container-lg, .container-md, .container-sm, .container-xl {
+    max-width: 100% !important;
+}
+
+.center {
+    text-align: center;
+}
+
+div.full {
+    /*min-height: 100%;*/
+    /*height: 100%;*/
+    position: absolute;
+    top: 0;
+    bottom: 0;
+}
+
+#top {
+    margin-top: 20px;
+}
+
+.btn-container {
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 100%;
+    padding-bottom: 10%;
+    padding-top: 10%;
+    margin-top: 10%;
+    border: 10px #4c4caf solid;
+}
+
+#namefile_1 {
+    font-size: 25px;
+    color: black;
+}
+
+.youtube {
+    display: inline-block;
+}
+
+#namefile_2 {
+    font-size: 25px;
+    color: black;
+    display: inline-block;
+    line-height: 20px;
+    vertical-align: bottom;
+}
+
+.local {
+    display: inline-block;
+    vertical-align: top;
+    line-height: 30px;
+    margin-top: 9px;
+}
+
+i.fa.fa-youtube-play {
+    margin-left: 6px;
+}
+
+input#sub {
+    background-color: #4c4caf;
+    border: none;
+    color: white;
+    padding: 10px 26px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 22px;
+    margin-top: 5vh;
+    border-radius: 6px;
+}
+
+.white {
+    color: white;
+}
+
+.imgupload {
+    color: #1E2832;
+    padding-top: 40px;
+    font-size: 7em;
+}
+
+h4 > strong {
+    color: #ff3f3f
+}
+
+.btn-primary {
+    border-color: #ff3f3f !important;
+    color: #ffffff;
+    text-shadow: 0 -1px 0 rgba(0, 0, 0, 0.25);
+    background-color: #ff3f3f !important;
+    border-color: #ff3f3f !important;
+}
+
+/*these two are set to not display at start*/
+.imgupload.ok {
+    display: none;
+    color: green;
+}
+
+.imgupload.stop {
+    display: none;
+    color: red;
+}
+
+/*this sets the actual file input to overlay our button*/
+#fileup {
+    opacity: 0;
+    -moz-opacity: 0;
+    filter: progid:DXImageTransform.Microsoft.Alpha(opacity=0);
+    width: 200px;
+    cursor: pointer;
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    bottom: 40px;
+    height: 50px;
+}
+
+/*switch between input and not active input*/
+#submitbtn {
+    padding: 5px 50px;
+    display: none;
+}
+
+#fakebtn {
+    padding: 5px 40px;
+}
+
+/*www.emilianocostanzo.com*/
+#sign {
+    color: #1E2832;
+    position: fixed;
+    right: 10px;
+    bottom: 10px;
+    text-shadow: 0px 0px 0px #1E2832;
+    transition: all .3s;
+}
+
+#sign:hover {
+    color: #1E2832;
+    text-shadow: 0px 0px 5px #1E2832;
+}
+
+p.mission {
+    font-style: italic;
+}
+
+div.main-block {
+    flex: 0 0 50%;
+    max-width: 50%;
+    margin-left: 25%;
+    margin-right: 25%;
+}
+
+.modal {
+    display: none; /* Hidden by default */
+    position: fixed; /* Stay in place */
+    z-index: 1; /* Sit on top */
+    padding-top: 100px; /* Location of the box */
+    left: 0;
+    top: 0;
+    width: 100%; /* Full width */
+    height: 100%; /* Full height */
+    overflow: auto; /* Enable scroll if needed */
+    background-color: rgb(0, 0, 0); /* Fallback color */
+    background-color: rgba(0, 0, 0, 0.4); /* Black w/ opacity */
+}
+
+/* Modal Content */
+.modal-content {
+    position: relative;
+    background-color: #fefefe;
+    margin: auto;
+    padding: 0;
+    border: 1px solid #888;
+    width: 80%;
+    box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
+    -webkit-animation-name: animatetop;
+    -webkit-animation-duration: 0.4s;
+    animation-name: animatetop;
+    animation-duration: 0.4s
+}
+
+/* Add Animation */
+@-webkit-keyframes animatetop {
+    from {
+        top: -300px;
+        opacity: 0
+    }
+    to {
+        top: 0;
+        opacity: 1
+    }
+}
+
+@keyframes animatetop {
+    from {
+        top: -300px;
+        opacity: 0
+    }
+    to {
+        top: 0;
+        opacity: 1
+    }
+}
+
+/* The Close Button */
+.close {
+    color: white;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+}
+
+.close:hover,
+.close:focus {
+    color: #000;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.modal-header {
+    padding: 2px 16px;
+    background-color: #FF0000;
+    color: white;
+    display: inline-block !important;
+}
+
+.modal-body {
+    padding: 2px 16px;
+}
+
+.modal-footer {
+    padding: 2px 16px;
+    background-color: #FF0000;
+    color: white;
+    display: inline-block !important;
+}
+
+#myBtn {
+    cursor: pointer;
+}
+
+#youtube_field {
+    padding: 10px 50px;
+    color: #3d8cff;
+}
+
+#submit-youtube {
+    margin-top: 2vh;
+    background-color: red;
+    color: white;
+    font-size: 19px;
+    font-weight: bold;
+    border-radius: 15px;
+    padding: 10px 20px;
+}

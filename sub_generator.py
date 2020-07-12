@@ -4,6 +4,7 @@ Module for generating subtitles and saving them as .srt file.
 
 import os
 import time
+import subprocess
 
 import logging
 import coloredlogs
@@ -68,6 +69,17 @@ class SubtitlesGenerator():
         subs.save(self.srt_path, encoding='utf-8')
 
         logging.info(f"Generated subtitles are saved in {self.srt_path}")
+
+
+    def embed_subs_in_video(self, path_to_original, path_to_result):
+        """
+        Embeds subtitles into a video and saves result as a new video.
+        :param path_to_original: Path to original video.
+        :param path_to_result: Path to result video.
+        """
+        subprocess.run([f"ffmpeg -i {path_to_original} -i {self.srt_path} "
+                        f"-c:s mov_text -c:v copy -c:a copy {path_to_result}"])
+        logging.info("Successfully embedded subtitles into video")
 
 
     @staticmethod
