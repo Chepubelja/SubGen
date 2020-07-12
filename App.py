@@ -18,13 +18,14 @@ app.secret_key = "super secret key"
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['RESULT_FOLDER'] = RESULT_FOLDER
 
-app.config['CELERY_BROKER_URL'] = 'redis://localhost:6379/0'
-app.config['CELERY_RESULT_BACKEND'] = 'redis://localhost:6379/0'
+app.config['CELERY_BROKER_URL'] = 'redis://redis:6379/0'
+app.config['CELERY_RESULT_BACKEND'] = 'redis://redis:6379/0'
 
-ALLOWED_EXTENSIONS = set(['mp4'])
+ALLOWED_EXTENSIONS = ['mp4']
 
 celery = Celery(app.name, broker=app.config['CELERY_BROKER_URL'])
 celery.conf.update(app.config)
+
 
 def allowed_file(filename):
     return '.' in filename and \
@@ -41,6 +42,7 @@ def my_task(self, inp_file):
     path_to_video = os.path.join(app.config['UPLOAD_FOLDER'], inp_file)
     video_name = inp_file.split('.')[0]
     path_to_audio = os.path.join(app.config['UPLOAD_FOLDER'], f"{video_name}.wav")
+    print(path_to_audio)
     path_to_subs = os.path.join(app.config['UPLOAD_FOLDER'], f"{video_name}.srt")
 
     self.update_state(state='PROGRESS',
@@ -73,6 +75,7 @@ def my_task(self, inp_file):
     # delete result file from server 10 minutes after returning it to user
     delete_file.apply_async(args=[path_to_subs,], countdown=600)
     return {'result': path_to_subs}
+
 
 @app.route('/status/<task_id>')
 def taskstatus(task_id):
@@ -119,12 +122,14 @@ def index():
     else:
         return render_template("index.html")
 
+
 @app.route('/return-files/<path:filename>')
 def return_files(filename):
     if os.path.exists(filename):
         return_filename = "{}_result.{}".format(session['original_filename'], filename.split('.')[-1])
         return send_file(filename, attachment_filename = return_filename, as_attachment=True)
     return redirect(url_for("index"))
+
 
 if __name__ == "__main__":
     app.debug = True
