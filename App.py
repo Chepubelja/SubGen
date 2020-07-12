@@ -30,9 +30,10 @@ celery = Celery(app.name, broker=app.config['CELERY_BROKER_URL'])
 celery.conf.update(app.config)
 
 
-def allowed_file(filename):
-    return '.' in filename and \
-           filename.rsplit('.', 1)[1] in ALLOWED_EXTENSIONS
+# def allowed_file(filename):
+#     print("$$$ allowed_file", filename.rsplit('.', 1)[1])
+#     return '.' in filename and \
+#            filename.rsplit('.', 1)[1] in ALLOWED_EXTENSIONS
 
 @celery.task(bind=True)
 def delete_file(self, filename):
@@ -116,32 +117,33 @@ def taskstatus(task_id):
 @app.route('/', methods=['GET', 'POST'])
 def index():
     if request.method == 'POST':
-        if 'youtube_field' in request.form or 'vid_inp_file' in request.files:
+        is_yt_file = 'youtube_field' in request.form and request.form['youtube_field'] 
+        is_user_file = 'vid_inp_file' in request.files and request.files['vid_inp_file']
 
-            session['uid'] = uuid.uuid4()
+        if not is_yt_file and not is_user_file:
+            return redirect(request.url)
 
-            lang = request.form['optradio']
-            res_format = request.form['optradio_2']
-        
-            if 'youtube_field' in request.form:
-                yt_file = YouTube(request.form['youtube_field']).streams[0].download(UPLOAD_FOLDER)
-                yt_filename = yt_file.split('/')[-1]
-                new_filename = str(session['uid']) + '.mp4'
-                os.rename(os.path.join(app.config['UPLOAD_FOLDER'], yt_filename), os.path.join(app.config['UPLOAD_FOLDER'], new_filename))
-                session['original_filename'] = yt_filename.split('.')[0]
-                inp_file_name = "{}.{}".format(str(session['uid']), 'mp4')
+        session['uid'] = uuid.uuid4()
+        lang = request.form['optradio']
+        res_format = request.form['optradio_2']
+    
+        if is_yt_file:
+            yt_file = YouTube(request.form['youtube_field']).streams[0].download(UPLOAD_FOLDER)
+            yt_filename = yt_file.split('/')[-1]
+            new_filename = str(session['uid']) + '.mp4'
+            os.rename(os.path.join(app.config['UPLOAD_FOLDER'], yt_filename), os.path.join(app.config['UPLOAD_FOLDER'], new_filename))
+            session['original_filename'] = yt_filename.split('.')[0]
+            inp_file_name = "{}.{}".format(str(session['uid']), 'mp4')
 
-            else:
-                if not request.files['vid_inp_file'] or not allowed_file(request.files['vid_inp_file']):
-                    return redirect(request.url)
-                vid_inp_file = request.files['vid_inp_file']
-                session['original_filename'] = vid_inp_file.filename.split('.')[0]
-                file_ext = vid_inp_file.filename.split('.')[-1]
-                inp_file_name = "{}.{}".format(str(session['uid']), file_ext)
-                vid_inp_file.save(os.path.join(app.config['UPLOAD_FOLDER'], inp_file_name))
+        else:
+            vid_inp_file = request.files['vid_inp_file']
+            session['original_filename'] = vid_inp_file.filename.split('.')[0]
+            file_ext = vid_inp_file.filename.split('.')[-1]
+            inp_file_name = "{}.{}".format(str(session['uid']), file_ext)
+            vid_inp_file.save(os.path.join(app.config['UPLOAD_FOLDER'], inp_file_name))
 
-            task = my_task.apply_async((inp_file_name, lang, res_format))
-            return render_template('index.html', Location=url_for('taskstatus', task_id=task.id))
+        task = my_task.apply_async((inp_file_name, lang, res_format))
+        return render_template('index.html', Location=url_for('taskstatus', task_id=task.id))
 
     return render_template('index.html')
 
