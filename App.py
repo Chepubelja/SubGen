@@ -9,8 +9,8 @@ from audio_extractor import AudioExtractor
 from recognizer import SpeechRecognizer
 from sub_generator import SubtitlesGenerator
 
-UPLOAD_FOLDER = './files'
-RESULT_FOLDER = './files'
+UPLOAD_FOLDER = '/SubGen/files'
+RESULT_FOLDER = '/SubGen/files'
 
 app = Flask(__name__)
 app.secret_key = "super secret key"
@@ -18,13 +18,17 @@ app.secret_key = "super secret key"
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['RESULT_FOLDER'] = RESULT_FOLDER
 
-app.config['CELERY_BROKER_URL'] = 'redis://localhost:6379/0'
-app.config['CELERY_RESULT_BACKEND'] = 'redis://localhost:6379/0'
+app.config['CELERY_BROKER_URL'] = 'redis://redis:6379/0'
+app.config['CELERY_RESULT_BACKEND'] = 'redis://redis:6379/0'
 
-ALLOWED_EXTENSIONS = set(['mp4'])
+"""app.config['CELERY_BROKER_URL'] = 'redis://localhost:6379/0'
+app.config['CELERY_RESULT_BACKEND'] = 'redis://localhost:6379/0'"""
+
+ALLOWED_EXTENSIONS = ['mp4']
 
 celery = Celery(app.name, broker=app.config['CELERY_BROKER_URL'])
 celery.conf.update(app.config)
+
 
 def allowed_file(filename):
     return '.' in filename and \
@@ -36,6 +40,7 @@ def my_task(self, inp_file):
     path_to_video = os.path.join(app.config['UPLOAD_FOLDER'], inp_file)
     video_name = inp_file.split('.')[0]
     path_to_audio = os.path.join(app.config['UPLOAD_FOLDER'], f"{video_name}.wav")
+    print(path_to_audio)
     path_to_subs = os.path.join(app.config['UPLOAD_FOLDER'], f"{video_name}.srt")
 
     self.update_state(state='PROGRESS',
@@ -62,6 +67,7 @@ def my_task(self, inp_file):
                       meta={'status': "Done! "})
 
     return {'result': path_to_subs}
+
 
 @app.route('/status/<task_id>')
 def taskstatus(task_id):
@@ -104,12 +110,14 @@ def index():
     else:
         return render_template("index.html")
 
+
 @app.route('/return-files/<path:filename>')
 def return_files(filename):
     try:
         return send_file(filename, as_attachment=True)
     except Exception as e:
         return str(e)
+
 
 if __name__ == "__main__":
     app.debug = True
