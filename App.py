@@ -8,6 +8,9 @@ import shutil
 from audio_extractor import AudioExtractor
 from recognizer import SpeechRecognizer
 from sub_generator import SubtitlesGenerator
+from translator import SubTranslator
+
+from pytube import YouTube
 
 UPLOAD_FOLDER = './files'
 RESULT_FOLDER = './files'
@@ -21,7 +24,7 @@ app.config['RESULT_FOLDER'] = RESULT_FOLDER
 app.config['CELERY_BROKER_URL'] = 'redis://redis:6379/0'
 app.config['CELERY_RESULT_BACKEND'] = 'redis://redis:6379/0'
 
-ALLOWED_EXTENSIONS = ['mp4']
+ALLOWED_EXTENSIONS = ['mp4', 'mp3']
 
 celery = Celery(app.name, broker=app.config['CELERY_BROKER_URL'])
 celery.conf.update(app.config)
@@ -38,11 +41,10 @@ def delete_file(self, filename):
 
 
 @celery.task(bind=True)
-def my_task(self, inp_file):
+def my_task(self, inp_file, lang, res_format):
     path_to_video = os.path.join(app.config['UPLOAD_FOLDER'], inp_file)
     video_name = inp_file.split('.')[0]
     path_to_audio = os.path.join(app.config['UPLOAD_FOLDER'], f"{video_name}.wav")
-    print(path_to_audio)
     path_to_subs = os.path.join(app.config['UPLOAD_FOLDER'], f"{video_name}.srt")
 
     self.update_state(state='PROGRESS',
@@ -59,22 +61,38 @@ def my_task(self, inp_file):
     speech_recognizer = SpeechRecognizer()
     recognized_text = speech_recognizer.recognize(path_to_audio)
 
+    if (lang != 'english'):
+        sub_translator = SubTranslator()
+        recognized_text = sub_translator.translate(recognized_text, dest_lang=lang).text
+
     self.update_state(state='PROGRESS',
                       meta={'status': "Generated subtitles ..."})
 
     sub_gen = SubtitlesGenerator(path_to_subs)
     sub_gen.generate_srt(recognized_text)
 
-    # delete intermidiate files
+    result = path_to_subs
+
+    if res_format == 'mp4':
+
+        self.update_state(state='PROGRESS',
+                      meta={'status': "Embed subtitles into video ..."})
+
+        path_to_video_with_subs = os.path.join(app.config['UPLOAD_FOLDER'], video_name + "_result.mp4") 
+        sub_gen.embed_subs_in_video(path_to_video, path_to_video_with_subs)
+        result = path_to_video_with_subs
+
+        os.remove(path_to_subs)
+
     os.remove(path_to_video)
     os.remove(path_to_audio)
 
     self.update_state(state='PROGRESS',
-                      meta={'status': "Done! "})
+                    meta={'status': "Done! "})
 
     # delete result file from server 10 minutes after returning it to user
-    delete_file.apply_async(args=[path_to_subs,], countdown=600)
-    return {'result': path_to_subs}
+    delete_file.apply_async(args=[result,], countdown=600)
+    return {'result': result}
 
 
 @app.route('/status/<task_id>')
@@ -98,29 +116,33 @@ def taskstatus(task_id):
 @app.route('/', methods=['GET', 'POST'])
 def index():
     if request.method == 'POST':
-        session['uid'] = uuid.uuid4()
+        if 'youtube_field' in request.form or 'vid_inp_file' in request.files:
 
-        if 'vid_inp_file' not in request.files:
-            flash('no input file')
-            return redirect(request.url)
+            session['uid'] = uuid.uuid4()
 
-        vid_inp_file = request.files['vid_inp_file']
+            lang = request.form['optradio']
+            res_format = request.form['optradio_2']
+        
+            if 'youtube_field' in request.form:
+                yt_file = YouTube(request.form['youtube_field']).streams[0].download(UPLOAD_FOLDER)
+                yt_filename = yt_file.split('/')[-1]
+                new_filename = str(session['uid']) + '.mp4'
+                os.rename(os.path.join(app.config['UPLOAD_FOLDER'], yt_filename), os.path.join(app.config['UPLOAD_FOLDER'], new_filename))
+                session['original_filename'] = yt_filename.split('.')[0]
+                inp_file_name = "{}.{}".format(str(session['uid']), 'mp4')
 
-        if vid_inp_file and allowed_file(vid_inp_file.filename):
-            # original file name (is used to return result file with similar name)
-            session['original_filename'] = vid_inp_file.filename.split('.')[0]
+            else:
+                if not request.files['vid_inp_file'] or not allowed_file(request.files['vid_inp_file']):
+                    return redirect(request.url)
+                session['original_filename'] = vid_inp_file.filename.split('.')[0]
+                file_ext = vid_inp_file.filename.split('.')[-1]
+                inp_file_name = "{}.{}".format(str(session['uid']), file_ext)
+                vid_inp_file.save(os.path.join(app.config['UPLOAD_FOLDER'], inp_file_name))
 
-            file_ext = vid_inp_file.filename.split('.')[-1]
-            # filename on server
-            inp_file_name = "{}.{}".format(str(session['uid']), file_ext)
-            vid_inp_file.save(os.path.join(app.config['UPLOAD_FOLDER'], inp_file_name))
-            task = my_task.apply_async((inp_file_name,))
+            task = my_task.apply_async((inp_file_name, lang, res_format))
             return render_template('index.html', Location=url_for('taskstatus', task_id=task.id))
-        else:
-            flash('some error occurred')
-            return redirect(request.url)
-    else:
-        return render_template("index.html")
+
+    return render_template('index.html')
 
 
 @app.route('/return-files/<path:filename>')
