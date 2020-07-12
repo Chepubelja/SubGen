@@ -36,7 +36,6 @@ def delete_file(self, filename):
         os.remove(filename)
 
 
-
 @celery.task(bind=True)
 def my_task(self, inp_file):
     path_to_video = os.path.join(app.config['UPLOAD_FOLDER'], inp_file)
@@ -64,12 +63,15 @@ def my_task(self, inp_file):
     sub_gen = SubtitlesGenerator(path_to_subs)
     sub_gen.generate_srt(recognized_text)
 
+    # delete intermidiate files
     os.remove(path_to_video)
     os.remove(path_to_audio)
 
     self.update_state(state='PROGRESS',
                       meta={'status': "Done! "})
 
+    # delete result file from server 10 minutes after returning it to user
+    delete_file.apply_async(args=[path_to_subs,], countdown=600)
     return {'result': path_to_subs}
 
 @app.route('/status/<task_id>')
@@ -115,9 +117,10 @@ def index():
 
 @app.route('/return-files/<path:filename>')
 def return_files(filename):
-    # delete file in 10 minutes after creation
-    delete_file.apply_async(args=[filename,], countdown=600)
-    return send_file(filename, as_attachment=True)
+    if os.path.exists(filename):
+        return send_file(filename, as_attachment=True)
+    return redirect(url_for("index"))
+
    
 
 if __name__ == "__main__":
