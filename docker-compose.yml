@@ -13,6 +13,8 @@ services:
     depends_on:
        - redis
        - celery
+    volumes:
+      - app-volume:/SubGen/files
     command:
       flask run --host 0.0.0.0
 
@@ -22,6 +24,8 @@ services:
       - '6379:6379'
     command:
       redis-server
+    volumes:
+      - app-volume:/SubGen/files
 
   celery:
     build: .
@@ -29,5 +33,10 @@ services:
       - redis
     depends_on:
       - redis
+    volumes:
+      - app-volume:/SubGen/files
     command:
       celery -A App.celery worker
+
+volumes:
+    app-volume:

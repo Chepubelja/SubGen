@@ -9,8 +9,8 @@ from audio_extractor import AudioExtractor
 from recognizer import SpeechRecognizer
 from sub_generator import SubtitlesGenerator
 
-UPLOAD_FOLDER = '/SubGen/files'
-RESULT_FOLDER = '/SubGen/files'
+UPLOAD_FOLDER = './files'
+RESULT_FOLDER = './files'
 
 app = Flask(__name__)
 app.secret_key = "super secret key"
@@ -20,9 +20,6 @@ app.config['RESULT_FOLDER'] = RESULT_FOLDER
 
 app.config['CELERY_BROKER_URL'] = 'redis://redis:6379/0'
 app.config['CELERY_RESULT_BACKEND'] = 'redis://redis:6379/0'
-
-"""app.config['CELERY_BROKER_URL'] = 'redis://localhost:6379/0'
-app.config['CELERY_RESULT_BACKEND'] = 'redis://localhost:6379/0'"""
 
 ALLOWED_EXTENSIONS = ['mp4']
 
