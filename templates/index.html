@@ -18,6 +18,15 @@
         </form>
 
         <div id="progress"></div>
+        {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            <ul class=flashes>
+            {% for message in messages %}
+            <li>{{ message }}</li>
+            {% endfor %}
+            </ul>
+        {% endif %}
+        {% endwith %}
 
         {% if Location %}
             <script src="//cdnjs.cloudflare.com/ajax/libs/nanobar/0.2.1/nanobar.min.js"></script>
@@ -35,12 +44,18 @@
                                     title: 'Result',
                                     href: '/return-files/'+ data['result'],
                                 }).appendTo('body');
+                                // reload page 10 minutes after returning result file to user (when file is deleted)
+                                setTimeout(function() {
+                                    location.reload();
+                                }, 10 * 60 * 1000);
+                                
                             }
+                            
                         } else {
                             // rerun in 2 seconds
                             setTimeout(function() {
                                 check_job_status(status_url);
-                            }, 5000);
+                            }, 1000);
                         }
                     });
                 }
