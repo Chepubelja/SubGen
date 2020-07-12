@@ -95,6 +95,7 @@ class SubtitlesGenerator():
             ffmpeg
                 .concat(input_video, input_audio, v=1, a=1)
                 .output('with_audio_'+path_to_result)
+                .overwrite_output()
                 .run()
         )
 

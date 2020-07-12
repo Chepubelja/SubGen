@@ -17,8 +17,8 @@ app.secret_key = "super secret key"
 UPLOAD_FOLDER = './files'
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
-app.config['CELERY_BROKER_URL'] = 'redis://redis:6379/0'
-app.config['CELERY_RESULT_BACKEND'] = 'redis://redis:6379/0'
+app.config['CELERY_BROKER_URL'] = 'redis://localhost:6379/0'
+app.config['CELERY_RESULT_BACKEND'] = 'redis://localhost:6379/0'
 
 celery = Celery(app.name, broker=app.config['CELERY_BROKER_URL'])
 celery.conf.update(app.config)
@@ -30,7 +30,7 @@ def delete_file(self, filename):
 
 
 @celery.task(bind=True)
-def my_task(self, inp_file, lang, res_format):
+def process_task(self, inp_file, lang, res_format):
     path_to_video = os.path.join(app.config['UPLOAD_FOLDER'], inp_file)
     video_name = inp_file.split('.')[0]
     path_to_audio = os.path.join(app.config['UPLOAD_FOLDER'], f"{video_name}.wav")
@@ -68,7 +68,7 @@ def my_task(self, inp_file, lang, res_format):
                       meta={'status': "Embed subtitles into video ..."})
 
         path_to_video_with_subs = os.path.join(app.config['UPLOAD_FOLDER'], video_name + "_result.mp4") 
-        sub_gen.embed_subs_in_video(path_to_video, path_to_video_with_subs)
+        sub_gen.embed_subs_in_video(path_to_video, path_to_video_with_subs, path_to_audio)
         result = path_to_video_with_subs
 
         os.remove(path_to_subs)
@@ -86,7 +86,7 @@ def my_task(self, inp_file, lang, res_format):
 
 @app.route('/status/<task_id>')
 def taskstatus(task_id):
-    task = my_task.AsyncResult(task_id)
+    task = process_task.AsyncResult(task_id)
     response = {
         'state': task.state,
     }
@@ -133,7 +133,7 @@ def index():
             inp_file_name = "{}.{}".format(str(session['uid']), file_ext)
             vid_inp_file.save(os.path.join(app.config['UPLOAD_FOLDER'], inp_file_name))
 
-        task = my_task.apply_async((inp_file_name, lang, res_format))
+        task = process_task.apply_async((inp_file_name, lang, res_format))
         return render_template('index.html', Location=url_for('taskstatus', task_id=task.id))
 
     return render_template('index.html')
