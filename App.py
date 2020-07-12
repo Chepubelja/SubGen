@@ -4,36 +4,24 @@ import os
 from celery import Celery
 import time
 import shutil
+from pytube import YouTube
 
 from audio_extractor import AudioExtractor
 from recognizer import SpeechRecognizer
 from sub_generator import SubtitlesGenerator
 from translator import SubTranslator
 
-from pytube import YouTube
-
-UPLOAD_FOLDER = './files'
-RESULT_FOLDER = './files'
-
 app = Flask(__name__)
 app.secret_key = "super secret key"
 
+UPLOAD_FOLDER = './files'
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-app.config['RESULT_FOLDER'] = RESULT_FOLDER
 
 app.config['CELERY_BROKER_URL'] = 'redis://redis:6379/0'
 app.config['CELERY_RESULT_BACKEND'] = 'redis://redis:6379/0'
 
-ALLOWED_EXTENSIONS = ['mp4', 'mp3']
-
 celery = Celery(app.name, broker=app.config['CELERY_BROKER_URL'])
 celery.conf.update(app.config)
-
-
-# def allowed_file(filename):
-#     print("$$$ allowed_file", filename.rsplit('.', 1)[1])
-#     return '.' in filename and \
-#            filename.rsplit('.', 1)[1] in ALLOWED_EXTENSIONS
 
 @celery.task(bind=True)
 def delete_file(self, filename):
@@ -139,6 +127,9 @@ def index():
             vid_inp_file = request.files['vid_inp_file']
             session['original_filename'] = vid_inp_file.filename.split('.')[0]
             file_ext = vid_inp_file.filename.split('.')[-1]
+            if file_ext=='mp3' and res_format == 'mp4':
+                flash(u'Invalid result format', 'error')
+                return redirect(request.url)
             inp_file_name = "{}.{}".format(str(session['uid']), file_ext)
             vid_inp_file.save(os.path.join(app.config['UPLOAD_FOLDER'], inp_file_name))
 
