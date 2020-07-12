@@ -1,22 +1,74 @@
 <!DOCTYPE html>
 <html>
-    <head>
-        <title>VIDEO SUBTITILES SERVICE</title>
-    </head>
-    <body>
-        <h2>VIDEO SUBTITILES SERVICE</h2>
-        <form action="{{ url_for('index') }}" method = "POST" enctype="multipart/form-data">
-            <div>
-                <label for="vid_inp_file">Choose file (mp4)</label>
-                <input type="file" id="vid_inp_file" name="vid_inp_file" accept=".mp4">
+<head>
+    <title>VIDEO SUBTITILES SERVICE</title>
+    <link href="{{ url_for('static', filename='styles/main.css') }}" rel="stylesheet" type="text/css">
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+</head>
+<body>
+<div class="container center full">
+    <div class="row">
+        <div class="col-md-12">
+            <h1 class="white">SUBTITILES GENERATION SERVICE</h1>
+            <p class="mission white">Our mission is to provide you with the highest quality of subtitles.</p>
+        </div>
+    </div>
+
+    <form name="upload" method="post" action="{{ url_for('index') }}" enctype="multipart/form-data"
+          accept-charset="utf-8">
+        <div class="row">
+            <div class="col-md-6 col-md-offset-3 center main-block">
+                <div class="btn-container">
+                    <!--the three icons: default, ok file (img), error file (not an img)-->
+                    <!--<h1 class="imgupload"><i class="fa fa-file-image-o"></i></h1>-->
+                    <!--<h1 class="imgupload ok"><i class="fa fa-check"></i></h1>-->
+                    <!--<h1 class="imgupload stop"><i class="fa fa-times"></i></h1>-->
+                    <!--this field changes dinamically displaying the filename we are trying to upload-->
+                    <!--<form action="{{ url_for('index') }}" method="POST" enctype="multipart/form-data">-->
+                    <div>
+                        <p id="namefile_1">Choose local file (either .mp3 or .mp4)</p>
+                        <!--<label for="vid_inp_file">Choose file (either .mp3 or .mp4)</label>-->
+                        <div class="local">
+                            <input type="file" id="vid_inp_file" name="vid_inp_file" accept=".mp4">
+                        </div>
+                        <div class="youtube">
+                            <p id="namefile_2">or Upload via Youtube</p>
+                            <i class="fa fa-youtube-play" id="myBtn" style="font-size:48px;color:red"></i>
+                        </div>
+                    </div>
+
+                    <div>
+                        <input id="sub" type="submit" value="Transcribe"/>
+
+                    </div>
+
+                    <!-- The Modal -->
+                    <div id="myModal" class="modal">
+
+                        <!-- Modal content -->
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <span class="close">&times;</span>
+                                <h2>Put and submit Youtube link in the field below</h2>
+                            </div>
+                            <div class="modal-body">
+                                <form action="/action_page.php">
+                                    <input type="text" id="youtube_field" name="youtube_field" placeholder="your Youtube link here"><br>
+                                    <input id="submit-youtube" type="submit" value="Submit">
+                                </form>
+
+                            </div>
+                            <div class="modal-footer">
+                                <h3></h3>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
-
-            <div>
-               <input id = "sub" type="submit" value="submit" />
-
-            </div>
-        </form>
-
+        </div>
+    </form>
+</div>
         <div id="progress"></div>
         {% with messages = get_flashed_messages() %}
         {% if messages %}
@@ -58,16 +110,47 @@
                             }, 1000);
                         }
                     });
-                }
+    }
 
-                var loc = '{{ Location }}';
-                (function(){
-                  check_job_status(loc);
-                })()
+    var loc = '{{ Location }}';
+    (function () {
+        check_job_status(loc);
+    })()
 
-            </script>
+</script>
 
-        {% endif %}
+{% endif %}
 
-    </body>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/js/bootstrap.min.js"></script>
+
+<script>
+    // Get the modal
+    var modal = document.getElementById("myModal");
+
+    // Get the button that opens the modal
+    var btn = document.getElementById("myBtn");
+
+    // Get the <span> element that closes the modal
+    var span = document.getElementsByClassName("close")[0];
+
+    // When the user clicks the button, open the modal
+    btn.onclick = function () {
+        modal.style.display = "block";
+    };
+
+    // When the user clicks on <span> (x), close the modal
+    span.onclick = function () {
+        modal.style.display = "none";
+    };
+
+    // When the user clicks anywhere outside of the modal, close it
+    window.onclick = function (event) {
+        if (event.target == modal) {
+            modal.style.display = "none";
+        }
+    }
+</script>
+
+
+</body>
 </html>
