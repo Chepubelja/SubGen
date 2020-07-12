@@ -30,6 +30,12 @@ def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1] in ALLOWED_EXTENSIONS
 
+@celery.task(bind=True)
+def delete_file(self, filename):
+    if os.path.exists(filename):
+        os.remove(filename)
+
+
 
 @celery.task(bind=True)
 def my_task(self, inp_file):
@@ -57,6 +63,9 @@ def my_task(self, inp_file):
 
     sub_gen = SubtitlesGenerator(path_to_subs)
     sub_gen.generate_srt(recognized_text)
+
+    os.remove(path_to_video)
+    os.remove(path_to_audio)
 
     self.update_state(state='PROGRESS',
                       meta={'status': "Done! "})
@@ -106,10 +115,10 @@ def index():
 
 @app.route('/return-files/<path:filename>')
 def return_files(filename):
-    try:
-        return send_file(filename, as_attachment=True)
-    except Exception as e:
-        return str(e)
+    # delete file in 10 minutes after creation
+    delete_file.apply_async(args=[filename,], countdown=600)
+    return send_file(filename, as_attachment=True)
+   
 
 if __name__ == "__main__":
     app.debug = True
