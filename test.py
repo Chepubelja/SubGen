@@ -23,7 +23,7 @@ if __name__ == '__main__':
     recognized_text = speech_recognizer.recognize('chrtistian_bale_oscar.wav')
 
     sub_translator = SubTranslator()
-    recognized_text = sub_translator.translate(recognized_text, dest_lang='german')
+    recognized_text = sub_translator.translate(recognized_text, dest_lang='german').text
     # print(recognized_text)
 
     sub_gen = SubtitlesGenerator(path_to_subs)
