@@ -1,7 +1,8 @@
 from flask import Flask, render_template, request, flash, redirect, session, jsonify, url_for, send_file
 import uuid
 import os
-from celery import Celery
+from celery import Celery, states
+from celery.exceptions import Ignore
 import time
 import shutil
 from pytube import YouTube
@@ -31,57 +32,74 @@ def delete_file(self, filename):
 
 @celery.task(bind=True)
 def process_task(self, inp_file, lang, res_format):
-    path_to_video = os.path.join(app.config['UPLOAD_FOLDER'], inp_file)
-    video_name = inp_file.split('.')[0]
-    path_to_audio = os.path.join(app.config['UPLOAD_FOLDER'], f"{video_name}.wav")
-    path_to_subs = os.path.join(app.config['UPLOAD_FOLDER'], f"{video_name}.srt")
+    try:
+        path_to_video = os.path.join(app.config['UPLOAD_FOLDER'], inp_file)
+        video_name = inp_file.split('.')[0]
+        path_to_audio = os.path.join(app.config['UPLOAD_FOLDER'], f"{video_name}.wav")
+        path_to_subs = os.path.join(app.config['UPLOAD_FOLDER'], f"{video_name}.srt")
 
-    self.update_state(state='PROGRESS',
-                      meta={'status': "Extracting audio ..."})
-
-    audio_ext = AudioExtractor(path_to_video)
-    audio_ext.load_video()
-    audio_ext.extract_audio()
-    audio_ext.save_audio(path_to_audio)
-
-    self.update_state(state='PROGRESS',
-                      meta={'status': "Converting audio into text ..."})
-
-    speech_recognizer = SpeechRecognizer()
-    recognized_text = speech_recognizer.recognize(path_to_audio)
-
-    if (lang != 'english'):
-        sub_translator = SubTranslator()
-        recognized_text = sub_translator.translate(recognized_text, dest_lang=lang).text
-
-    self.update_state(state='PROGRESS',
-                      meta={'status': "Generated subtitles ..."})
-
-    sub_gen = SubtitlesGenerator(path_to_subs)
-    sub_gen.generate_srt(recognized_text)
-
-    result = path_to_subs
-
-    if res_format == 'mp4':
+        path_to_result = path_to_subs
+        if res_format == 'mp4':
+            path_to_result = os.path.join(app.config['UPLOAD_FOLDER'], video_name + "_result.mp4") 
 
         self.update_state(state='PROGRESS',
-                      meta={'status': "Embed subtitles into video ..."})
+                        meta={'status': "Extracting audio ..."})
 
-        path_to_video_with_subs = os.path.join(app.config['UPLOAD_FOLDER'], video_name + "_result.mp4") 
-        sub_gen.embed_subs_in_video(path_to_video, path_to_video_with_subs, path_to_audio)
-        result = path_to_video_with_subs
+        audio_ext = AudioExtractor(path_to_video)
+        audio_ext.load_video()
+        audio_ext.extract_audio()
+        audio_ext.save_audio(path_to_audio)
 
-        os.remove(path_to_subs)
+        self.update_state(state='PROGRESS',
+                        meta={'status': "Converting audio into text ..."})
 
-    os.remove(path_to_video)
-    os.remove(path_to_audio)
+        speech_recognizer = SpeechRecognizer()
+        recognized_text = speech_recognizer.recognize(path_to_audio)
 
-    self.update_state(state='PROGRESS',
-                    meta={'status': "Done! "})
+        if (lang != 'english'):
+            sub_translator = SubTranslator()
+            recognized_text = sub_translator.translate(recognized_text, dest_lang=lang).text
 
-    # delete result file from server 10 minutes after returning it to user
-    delete_file.apply_async(args=[result,], countdown=600)
-    return {'result': result}
+        self.update_state(state='PROGRESS',
+                        meta={'status': "Generated subtitles ..."})
+
+        sub_gen = SubtitlesGenerator(path_to_subs)
+        sub_gen.generate_srt(recognized_text)
+
+        if res_format == 'mp4':
+
+            self.update_state(state='PROGRESS',
+                        meta={'status': "Embed subtitles into video ..."})
+
+            sub_gen.embed_subs_in_video(path_to_video, path_to_result, path_to_audio)
+
+        self.update_state(state='PROGRESS',
+                        meta={'status': "Done! "})
+
+        # delete result file from server 10 minutes after returning it to user
+        delete_file.apply_async(args=[path_to_result,], countdown=600)
+
+        return {'result': path_to_result}
+
+    except Exception as e:        
+        app.logger.info('error occurred ', getattr(e, 'message', repr(e)))
+
+        self.update_state( 
+            state=states.FAILURE,
+            meta={
+                'exc_type': type(e).__name__,
+                'exc_message': getattr(e, 'message', repr(e)),
+            })
+
+        if os.path.exists(path_to_result):
+            os.remove(path_to_result)
+
+        raise Ignore()
+
+    finally:
+        for filepath in [path_to_video, path_to_audio, path_to_subs]:
+            if os.path.exists(filepath):
+                os.remove(filepath)
 
 
 @app.route('/status/<task_id>')
@@ -93,8 +111,10 @@ def taskstatus(task_id):
 
     if task.state not in ('FAILURE', 'PENDING') and 'result' in task.info:
         response['result'] = task.info['result']
-
-    if task.state != 'FAILURE' and 'status' in task.info:
+    
+    if task.state == 'FAILURE':
+        response['status'] = "Some error occurred during processing"
+    elif 'status' in task.info:
         response['status'] = task.info['status']
     else:
         response['status'] = task.state
