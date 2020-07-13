@@ -149,6 +149,8 @@ def process_audio(self, inp_file, lang):
         if os.path.exists(path_to_subs):
             os.remove(path_to_subs)
 
+        
+
         raise Ignore()
 
     finally:
@@ -159,7 +161,7 @@ def process_audio(self, inp_file, lang):
 
 @app.route('/status/<task_id>')
 def taskstatus(task_id):
-    task = process_task.AsyncResult(task_id)
+    task = process_audio.AsyncResult(task_id)
     response = {
         'state': task.state,
     }
