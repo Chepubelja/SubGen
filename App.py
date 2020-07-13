@@ -31,7 +31,7 @@ def delete_file(self, filename):
 
 
 @celery.task(bind=True)
-def process_task(self, inp_file, lang, res_format):
+def process_video(self, inp_file, lang, res_format):
     try:
         path_to_video = os.path.join(app.config['UPLOAD_FOLDER'], inp_file)
         video_name = inp_file.split('.')[0]
@@ -50,6 +50,7 @@ def process_task(self, inp_file, lang, res_format):
         audio_ext.extract_audio()
         audio_ext.save_audio(path_to_audio)
 
+
         self.update_state(state='PROGRESS',
                         meta={'status': "Converting audio into text ..."})
 
@@ -61,7 +62,7 @@ def process_task(self, inp_file, lang, res_format):
             recognized_text = sub_translator.translate(recognized_text, dest_lang=lang).text
 
         self.update_state(state='PROGRESS',
-                        meta={'status': "Generated subtitles ..."})
+                        meta={'status': "Generating subtitles ..."})
 
         sub_gen = SubtitlesGenerator(path_to_subs)
         sub_gen.generate_srt(recognized_text)
@@ -69,7 +70,7 @@ def process_task(self, inp_file, lang, res_format):
         if res_format == 'mp4':
 
             self.update_state(state='PROGRESS',
-                        meta={'status': "Embed subtitles into video ..."})
+                        meta={'status': "Embedding subtitles into video ..."})
 
             sub_gen.embed_subs_in_video(path_to_video, path_to_result, path_to_audio)
 
@@ -81,7 +82,8 @@ def process_task(self, inp_file, lang, res_format):
 
         return {'result': path_to_result}
 
-    except Exception as e:        
+    except Exception as e:
+        print("ERROR:", getattr(e, 'message', repr(e)))        
         app.logger.info('error occurred ', getattr(e, 'message', repr(e)))
 
         self.update_state( 
@@ -98,6 +100,59 @@ def process_task(self, inp_file, lang, res_format):
 
     finally:
         for filepath in [path_to_video, path_to_audio, path_to_subs]:
+            if os.path.exists(filepath):
+                os.remove(filepath)
+
+
+@celery.task(bind=True)
+def process_audio(self, inp_file, lang):
+    try:
+        path_to_audio = os.path.join(app.config['UPLOAD_FOLDER'], inp_file)
+        audio_name = inp_file.split('.')[0]
+        path_to_subs = os.path.join(app.config['UPLOAD_FOLDER'], f"{audio_name}.srt")
+
+        self.update_state(state='PROGRESS',
+                        meta={'status': "Converting audio into text ..."})
+
+        speech_recognizer = SpeechRecognizer()
+        recognized_text = speech_recognizer.recognize(path_to_audio)
+
+        if (lang != 'english'):
+            sub_translator = SubTranslator()
+            recognized_text = sub_translator.translate(recognized_text, dest_lang=lang).text
+
+        self.update_state(state='PROGRESS',
+                        meta={'status': "Generating subtitles ..."})
+
+        sub_gen = SubtitlesGenerator(path_to_subs)
+        sub_gen.generate_srt(recognized_text)
+
+        self.update_state(state='PROGRESS',
+                        meta={'status': "Done! "})
+
+        # delete result file from server 10 minutes after returning it to user
+        delete_file.apply_async(args=[path_to_subs,], countdown=600)
+
+        return {'result': path_to_subs}
+
+    except Exception as e:
+        print("ERROR:", getattr(e, 'message', repr(e)))        
+        app.logger.info('error occurred ', getattr(e, 'message', repr(e)))
+
+        self.update_state( 
+            state=states.FAILURE,
+            meta={
+                'exc_type': type(e).__name__,
+                'exc_message': getattr(e, 'message', repr(e)),
+            })
+
+        if os.path.exists(path_to_subs):
+            os.remove(path_to_subs)
+
+        raise Ignore()
+
+    finally:
+        for filepath in [path_to_audio]:
             if os.path.exists(filepath):
                 os.remove(filepath)
 
@@ -143,6 +198,8 @@ def index():
             session['original_filename'] = yt_filename.split('.')[0]
             inp_file_name = "{}.{}".format(str(session['uid']), 'mp4')
 
+            task = process_video.apply_async((inp_file_name, lang, res_format))
+
         else:
             vid_inp_file = request.files['vid_inp_file']
             session['original_filename'] = vid_inp_file.filename.split('.')[0]
@@ -153,7 +210,11 @@ def index():
             inp_file_name = "{}.{}".format(str(session['uid']), file_ext)
             vid_inp_file.save(os.path.join(app.config['UPLOAD_FOLDER'], inp_file_name))
 
-        task = process_task.apply_async((inp_file_name, lang, res_format))
+            if file_ext == 'mp4':
+                task = process_video.apply_async((inp_file_name, lang, res_format))
+            else:
+                task = process_audio.apply_async((inp_file_name, lang))
+            
         return render_template('index.html', Location=url_for('taskstatus', task_id=task.id))
 
     return render_template('index.html')
