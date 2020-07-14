@@ -20,6 +20,15 @@
         <div class="row">
             <div class="col-md-6 col-md-offset-3 center main-block">
                 <div class="btn-container">
+                        {% with messages = get_flashed_messages(with_categories=true) %}
+                        {% if messages %}
+                          <ul class=flashes>
+                          {% for category, message in messages %}
+                            <li class="{{ category }}">{{ message }}</li>
+                          {% endfor %}
+                          </ul>
+                        {% endif %}
+                      {% endwith %}
                     {% if Location %}
                     <div id="progress-container" >
                             <div id="progress"></div>
@@ -39,7 +48,7 @@
                         <p id="namefile_1">Choose local file (either .mp3 or .mp4)</p>
                         <!--<label for="vid_inp_file">Choose file (either .mp3 or .mp4)</label>-->
                         <div class="local">
-                            <input type="file" id="vid_inp_file" name="vid_inp_file" accept=".mp4">
+                            <input type="file" id="vid_inp_file" name="vid_inp_file" accept=".mp4, .mp3">
                         </div>
                         <div class="youtube">
                             <p id="namefile_2">or Upload via Youtube</p>
@@ -48,27 +57,27 @@
                     </div>
 
                     <div>
-                        <input id="sub" type="submit" value="Transcribe"/>
-                    </div>
-
-                    <div>
                         <p id="namefile_3">Translate result subtitles to any language below</p>
-                        <label class="radio-inline"><input type="radio" name="optradio">arabic</label>
-                        <label class="radio-inline"><input type="radio" name="optradio">chinese (simplified)</label>
-                        <label class="radio-inline"><input type="radio" name="optradio">english</label>
-                        <label class="radio-inline"><input type="radio" name="optradio">italian</label>
-                        <label class="radio-inline"><input type="radio" name="optradio">german</label>
-                        <label class="radio-inline"><input type="radio" name="optradio">spanish</label>
-                        <label class="radio-inline"><input type="radio" name="optradio">french</label>
+                        <label class="radio-inline"><input type="radio" name="optradio" value="arabic">arabic</label>
+                        <label class="radio-inline"><input type="radio" name="optradio" value="chinese (simplified)">chinese (simplified)</label>
+                        <label class="radio-inline"><input type="radio" name="optradio" value="english" checked>english</label>
+                        <label class="radio-inline"><input type="radio" name="optradio" value="italian">italian</label>
+                        <label class="radio-inline"><input type="radio" name="optradio" value="german">german</label>
+                        <label class="radio-inline"><input type="radio" name="optradio" value="spanish">spanish</label>
+                        <label class="radio-inline"><input type="radio" name="optradio" value="french">french</label>
                     </div>
 
                     <div>
                         <p id="namefile_4">Save result as</p>
-                        <label class="radio-inline"><input type="radio" name="optradio_2">.mp4 with subtitles</label>
-                        <label class="radio-inline"><input type="radio" name="optradio_2">.srt file</label>
-                        <div>
+                        <label class="radio-inline"><input type="radio" name="optradio_2" value="mp4">.mp4 with subtitles</label>
+                        <label class="radio-inline"><input type="radio" name="optradio_2" value="srt" checked>.srt file</label>
+                        <!-- <div>
                             <input id="download_res" type="submit" value="Download result"/>
-                        </div>
+                        </div> -->
+                    </div>
+
+                    <div>
+                        <input id="sub" type="submit" value="Transcribe"/>
                     </div>
 
                     <!-- The Modal -->
