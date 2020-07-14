@@ -5,7 +5,7 @@ from celery import Celery, states
 from celery.exceptions import Ignore
 import time
 import shutil
-from pytube import YouTube
+import pytube
 
 from audio_extractor import AudioExtractor
 from recognizer import SpeechRecognizer
@@ -103,7 +103,11 @@ def process_video(self, inp_file, lang, res_format):
         raise Ignore()
 
     finally:
-        for filepath in [path_to_video, path_to_audio, path_to_subs]:
+        to_remove = [path_to_video, path_to_audio]
+        if res_format == 'mp4':
+            to_remove.append(path_to_subs)
+
+        for filepath in to_remove:
             if os.path.exists(filepath):
                 os.remove(filepath)
 
@@ -200,6 +204,7 @@ def index():
         is_user_file = 'vid_inp_file' in request.files and request.files['vid_inp_file']
 
         if not is_yt_file and not is_user_file:
+            flash(u'No file selected', 'error')
             return redirect(request.url)
 
         session['uid'] = uuid.uuid4()
@@ -207,7 +212,12 @@ def index():
         res_format = request.form['optradio_2']
     
         if is_yt_file:
-            yt_file = YouTube(request.form['youtube_field']).streams[0].download(UPLOAD_FOLDER)
+            try:
+                yt_file = pytube.YouTube(request.form['youtube_field']).streams[0].download(UPLOAD_FOLDER)
+            except pytube.exceptions.RegexMatchError:
+                flash(u'Invalid link', 'error')
+                return redirect(request.url)
+
             yt_filename = yt_file.split('/')[-1]
             new_filename = str(session['uid']) + '.mp4'
             os.rename(os.path.join(app.config['UPLOAD_FOLDER'], yt_filename), os.path.join(app.config['UPLOAD_FOLDER'], new_filename))
