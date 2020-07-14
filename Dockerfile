@@ -9,7 +9,7 @@ ENV FLASK_RUN_HOST 127.0.0.1
 RUN mkdir /SubGen/files
 
 RUN apt-get update && apt-get upgrade
-RUN apt-get --assume-yes install python3 python3-pip redis-server
+RUN apt-get --assume-yes install python3 python3-pip redis-server ffmpeg
 RUN pip3 install pep517
 
 COPY requirements.txt requirements.txt
