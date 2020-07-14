@@ -72,33 +72,15 @@ class SubtitlesGenerator():
         logging.info(f"Generated subtitles are saved in {self.srt_path}")
 
 
-    def embed_subs_in_video(self, path_to_original, path_to_result, path_to_audio):
+    def embed_subs_in_video(self, path_to_original, path_to_result):
         """
         Embeds subtitles into a video and saves result as a new video.
         :param path_to_original: Path to original video.
         :param path_to_result: Path to result video.
         """
 
-        (
-            ffmpeg
-                .input(path_to_original)
-                .filter_('subtitles', self.srt_path)
-                .output(path_to_result)
-                .overwrite_output()
-                .run()
-        )
-
-        input_video = ffmpeg.input(path_to_result)
-        input_audio = ffmpeg.input(path_to_audio)
-
-        (
-            ffmpeg
-                .concat(input_video, input_audio, v=1, a=1)
-                .output('with_audio_'+path_to_result)
-                .overwrite_output()
-                .run()
-        )
-
+        subprocess.call(["ffmpeg", "-i", path_to_original, "-i", self.srt_path,
+                        "-c:s", "mov_text",  "-c:v",  "copy",  "-c:a", "copy", path_to_result])
         logging.info("Successfully embedded subtitles into video")
 
     @staticmethod

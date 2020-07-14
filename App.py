@@ -58,6 +58,10 @@ def process_video(self, inp_file, lang, res_format):
         recognized_text = speech_recognizer.recognize(path_to_audio)
 
         if (lang != 'english'):
+            
+            self.update_state(state='PROGRESS',
+                    meta={'status': "Translating into {} ...".format(lang)})
+
             sub_translator = SubTranslator()
             recognized_text = sub_translator.translate(recognized_text, dest_lang=lang).text
 
@@ -72,7 +76,7 @@ def process_video(self, inp_file, lang, res_format):
             self.update_state(state='PROGRESS',
                         meta={'status': "Embedding subtitles into video ..."})
 
-            sub_gen.embed_subs_in_video(path_to_video, path_to_result, path_to_audio)
+            sub_gen.embed_subs_in_video(path_to_video, path_to_result)
 
         self.update_state(state='PROGRESS',
                         meta={'status': "Done! "})
@@ -109,15 +113,27 @@ def process_audio(self, inp_file, lang):
     try:
         path_to_audio = os.path.join(app.config['UPLOAD_FOLDER'], inp_file)
         audio_name = inp_file.split('.')[0]
+        path_to_audio_new = os.path.join(app.config['UPLOAD_FOLDER'], f"{audio_name}.wav")
         path_to_subs = os.path.join(app.config['UPLOAD_FOLDER'], f"{audio_name}.srt")
+
+        self.update_state(state='PROGRESS',
+                        meta={'status': "Converting mp3 to wav ..."})
+
+        audio_ext = AudioExtractor(path_to_audio)
+        audio_ext.load_mp3()
+        audio_ext.save_audio(path_to_audio_new)
 
         self.update_state(state='PROGRESS',
                         meta={'status': "Converting audio into text ..."})
 
         speech_recognizer = SpeechRecognizer()
-        recognized_text = speech_recognizer.recognize(path_to_audio)
+        recognized_text = speech_recognizer.recognize(path_to_audio_new)
 
         if (lang != 'english'):
+
+            self.update_state(state='PROGRESS',
+                        meta={'status': "Translating into {} ...".format(lang)})
+
             sub_translator = SubTranslator()
             recognized_text = sub_translator.translate(recognized_text, dest_lang=lang).text
 
@@ -149,12 +165,10 @@ def process_audio(self, inp_file, lang):
         if os.path.exists(path_to_subs):
             os.remove(path_to_subs)
 
-        
-
         raise Ignore()
 
     finally:
-        for filepath in [path_to_audio]:
+        for filepath in [path_to_audio, path_to_audio_new]:
             if os.path.exists(filepath):
                 os.remove(filepath)
 
