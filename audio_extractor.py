@@ -2,7 +2,7 @@
 Module for extracting audio file from video file.
 """
 
-from moviepy.editor import VideoFileClip
+from moviepy.editor import VideoFileClip, AudioFileClip
 
 
 class AudioExtractor():
@@ -15,6 +15,9 @@ class AudioExtractor():
 
     def load_video(self):
         self.video = VideoFileClip(self.filename)
+
+    def load_mp3(self):
+        self.audio = AudioFileClip(self.filename)
 
     def extract_audio(self):
         self.audio = self.video.audio
