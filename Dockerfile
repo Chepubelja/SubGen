@@ -1,10 +1,10 @@
-FROM python:3.7-alpine
 FROM ubuntu:latest
 
 WORKDIR /SubGen
 
 ENV FLASK_APP App.py
 ENV FLASK_RUN_HOST 127.0.0.1
+ENV DEBIAN_FRONTEND=noninteractive
 
 RUN mkdir /SubGen/files
 
